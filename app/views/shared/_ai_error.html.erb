@@ -1,0 +1,14 @@
+<div class="alert alert-danger">
+  <h5 class="alert-heading">Something went wrong</h5>
+  <% case error_type %>
+  <% when :budget_exceeded %>
+    <p class="mb-2">You've reached your daily AI request limit. Come back tomorrow!</p>
+  <% when :gatekeeper_blocked %>
+    <p class="mb-2">Your input couldn't be processed. Please revise it and try again.</p>
+  <% when :timeout %>
+    <p class="mb-2">The AI took too long to respond. Please try again.</p>
+  <% else %>
+    <p class="mb-2">An unexpected error occurred. Please try again.</p>
+  <% end %>
+  <%= button_to "Try again", request.path, method: :get, class: "btn btn-outline-danger btn-sm" %>
+</div>

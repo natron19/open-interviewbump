@@ -1,0 +1,35 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1>AI Templates</h1>
+  <%= link_to "← Dashboard", admin_dashboard_path, class: "btn btn-sm btn-outline-secondary" %>
+</div>
+
+<% if @templates.empty? %>
+  <p class="text-muted">No templates seeded yet. Run <code>rails db:seed</code> to create the defaults.</p>
+<% else %>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Model</th>
+          <th>Description</th>
+          <th>Updated</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @templates.each do |template| %>
+          <tr>
+            <td><code><%= template.name %></code></td>
+            <td class="small text-muted"><%= template.model %></td>
+            <td class="small text-muted"><%= template.description %></td>
+            <td class="small text-muted"><%= template.updated_at.strftime("%b %d, %Y") %></td>
+            <td>
+              <%= link_to "Edit", admin_edit_ai_template_path(template), class: "btn btn-sm btn-outline-primary" %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% end %>

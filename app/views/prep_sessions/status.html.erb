@@ -1,0 +1,9 @@
+<%= turbo_frame_tag "prep-guide-status" do %>
+  <% if @prep_session.status == "complete" && @prep_guide %>
+    <%= render "prep_guide", prep_guide: @prep_guide, prep_session: @prep_session %>
+  <% elsif @prep_session.status == "failed" %>
+    <%= render "failed_state", prep_session: @prep_session %>
+  <% else %>
+    <%= render "in_progress_state", prep_session: @prep_session %>
+  <% end %>
+<% end %>

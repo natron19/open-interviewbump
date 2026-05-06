@@ -1,0 +1,100 @@
+<%# Hero %>
+<div class="py-5 text-center border-bottom mb-5">
+  <h1 class="display-4 fw-bold mb-3"><%= ENV.fetch("APP_NAME", "InterviewBump Demo") %></h1>
+  <p class="lead text-muted mx-auto mb-4" style="max-width: 640px;">
+    <%= ENV.fetch("APP_TAGLINE", "Tell it the company and role. The agent researches real interview experiences and builds your prep guide.") %>
+  </p>
+  <div class="d-flex justify-content-center gap-3 flex-wrap">
+    <%= link_to "Start preparing", sign_up_path, class: "btn btn-primary btn-lg" %>
+    <%= link_to "Sign in", sign_in_path, class: "btn btn-outline-secondary btn-lg" %>
+  </div>
+</div>
+
+<%# How it works %>
+<div class="container pb-5">
+  <h2 class="text-center mb-5">How it works</h2>
+  <div class="row g-4 text-center mb-5">
+    <div class="col-md-4">
+      <div class="fs-1 mb-3">📝</div>
+      <h5 class="fw-bold">Enter the job details</h5>
+      <p class="text-muted">Tell us the job title and company. Add a background summary so STAR outlines are tailored to your experience.</p>
+    </div>
+    <div class="col-md-4">
+      <div class="fs-1 mb-3">🔍</div>
+      <h5 class="fw-bold">Agent researches real candidate experiences</h5>
+      <p class="text-muted">A Gemini agent searches Reddit and Glassdoor for real accounts at that company and role. It fetches and reads the most useful results.</p>
+    </div>
+    <div class="col-md-4">
+      <div class="fs-1 mb-3">✅</div>
+      <h5 class="fw-bold">Receive your personalized prep guide</h5>
+      <p class="text-muted">5 likely questions with STAR outlines tailored to your background, company signals, smart questions to ask, and one watch-out.</p>
+    </div>
+  </div>
+
+  <%# Static sample prep guide %>
+  <h2 class="text-center mb-2">Sample Prep Guide: Senior Software Engineer at Stripe</h2>
+  <p class="text-center text-muted mb-4">This is an example of what your personalized output looks like.</p>
+
+  <div class="accordion prep-guide-accordion mb-4" id="sample-accordion">
+
+    <div class="accordion-item">
+      <h2 class="accordion-header">
+        <button class="accordion-button" type="button"
+                data-bs-toggle="collapse" data-bs-target="#sample-q1" aria-expanded="true">
+          Tell me about a time you debugged a critical production incident under time pressure.
+        </button>
+      </h2>
+      <div id="sample-q1" class="accordion-collapse collapse show" data-bs-parent="#sample-accordion">
+        <div class="accordion-body">
+          <p><strong>Situation:</strong> Our payment API started returning 500 errors to roughly 15% of requests during peak traffic on a Friday afternoon. My team owned the API layer between the checkout SDK and the bank processor.</p>
+          <p><strong>Task:</strong> Identify and resolve the root cause within 30 minutes to avoid breaching our SLA, without a blind full rollback that would lose in-flight transactions.</p>
+          <p><strong>Action:</strong> Pulled distributed traces, narrowed the error to a single downstream dependency timing out. Found a misconfigured timeout threshold that only surfaced under the concurrent request pattern of peak load. Deployed a targeted config change rather than a full rollback, so in-flight requests could complete.</p>
+          <p class="mb-0"><strong>Result:</strong> Error rate dropped to zero within 22 minutes. Wrote a postmortem that surfaced the missing timeout validation in our CI pipeline, preventing a class of similar issues in future deploys.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <h2 class="accordion-header">
+        <button class="accordion-button collapsed" type="button"
+                data-bs-toggle="collapse" data-bs-target="#sample-q2" aria-expanded="false">
+          How have you designed a system to handle high-throughput API requests reliably?
+        </button>
+      </h2>
+      <div id="sample-q2" class="accordion-collapse collapse" data-bs-parent="#sample-accordion">
+        <div class="accordion-body">
+          <p><strong>Situation:</strong> At my previous company (Series B, ~40k events/minute), our event ingestion pipeline dropped events during traffic spikes because it was synchronous end-to-end.</p>
+          <p><strong>Task:</strong> Re-architect the ingestion path to decouple write acceptance from processing without a full rewrite or downtime.</p>
+          <p><strong>Action:</strong> Introduced a durable queue in front of the processing workers. Made consumers idempotent so retries were safe. Added back-pressure handling so producers slowed gracefully under load. Rolled out behind a feature flag to validate throughput before fully switching over.</p>
+          <p class="mb-0"><strong>Result:</strong> Zero event loss under 3× peak load in production. P99 ingest latency fell from 800ms to 40ms.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <h2 class="accordion-header">
+        <button class="accordion-button collapsed" type="button"
+                data-bs-toggle="collapse" data-bs-target="#sample-q3" aria-expanded="false">
+          Describe a time you influenced a technical decision beyond your immediate team.
+        </button>
+      </h2>
+      <div id="sample-q3" class="accordion-collapse collapse" data-bs-parent="#sample-accordion">
+        <div class="accordion-body">
+          <p><strong>Situation:</strong> Three separate teams at my company were independently building versions of the same internal rate-limiting logic, creating inconsistency and duplicated maintenance.</p>
+          <p><strong>Task:</strong> Propose and drive adoption of a shared approach without having formal authority over the other teams.</p>
+          <p><strong>Action:</strong> Wrote a short design doc presenting the three current approaches side-by-side with their tradeoffs, plus a proposed common interface. Async-reviewed it with each team's tech lead before any all-hands discussion so feedback was addressed privately first.</p>
+          <p class="mb-0"><strong>Result:</strong> All three teams adopted the shared library within one sprint. Saved an estimated 3 weeks of duplicated work across the quarter.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="watch-out-callout mb-5">
+    <strong>Watch out:</strong> Stripe's written communication round surprises nearly every candidate who hasn't been warned. You will be asked to write a short technical design doc or postmortem during the process. Candidates who treat it as a formality consistently report it was weighted more heavily than expected — treat it as seriously as any coding round.
+  </div>
+
+  <div class="text-center">
+    <%= link_to "Start preparing for your interview →", sign_up_path, class: "btn btn-primary btn-lg" %>
+  </div>
+</div>

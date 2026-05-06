@@ -1,0 +1,15 @@
+<div class="card mt-3">
+  <div class="card-body">
+    <h6 class="card-title text-success">Response</h6>
+    <pre class="small text-light" style="white-space: pre-wrap"><%= result %></pre>
+    <% if log %>
+      <hr>
+      <div class="row text-muted small">
+        <div class="col">Tokens in: <%= log.prompt_token_count %></div>
+        <div class="col">Tokens out: <%= log.response_token_count %></div>
+        <div class="col">Duration: <%= log.duration_ms %>ms</div>
+        <div class="col">Cost: $<%= "%.6f" % (log.cost_estimate_cents.to_f / 100) %></div>
+      </div>
+    <% end %>
+  </div>
+</div>

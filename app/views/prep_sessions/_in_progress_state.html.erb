@@ -1,0 +1,17 @@
+<div class="text-center py-5">
+  <div class="spinner-border mb-3" style="color: #7c3aed; width: 3rem; height: 3rem;" role="status">
+    <span class="visually-hidden">Loading...</span>
+  </div>
+  <h4 class="mb-1">Researching <%= prep_session.company %> interview experiences...</h4>
+  <p class="text-muted mb-3">The agent is searching the web. This takes 15–30 seconds.</p>
+  <%= button_to "Cancel", prep_session_path(prep_session), method: :delete,
+        class: "btn btn-outline-secondary btn-sm",
+        form: { data: { turbo_confirm: "Cancel this prep session?", turbo_frame: "_top" } } %>
+</div>
+
+<div class="agent-progress-feed mt-3">
+  <div class="fw-semibold small text-muted mb-2">Agent activity</div>
+  <div id="agent-progress-entries">
+    <div class="text-muted fst-italic small">Starting research...</div>
+  </div>
+</div>

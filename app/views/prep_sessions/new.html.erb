@@ -1,0 +1,44 @@
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <h1 class="mb-4">New Prep Session</h1>
+
+    <% unless @has_profile %>
+      <div class="alert alert-warning">
+        Add a background summary to your profile so the prep guide can tailor STAR outlines to your experience.
+        <%= link_to "Complete your profile →", edit_job_seeker_profile_path, class: "alert-link" %>
+      </div>
+    <% end %>
+
+    <%= form_with model: @prep_session, url: prep_sessions_path do |f| %>
+
+      <% if @prep_session.errors.any? %>
+        <div class="alert alert-danger">
+          <% @prep_session.errors.full_messages.each do |msg| %>
+            <div><%= msg %></div>
+          <% end %>
+        </div>
+      <% end %>
+
+      <div class="mb-3">
+        <%= f.label :job_title, "Job Title", class: "form-label" %>
+        <%= f.text_field :job_title, class: "form-control", placeholder: "e.g. Senior Software Engineer", required: true %>
+      </div>
+
+      <div class="mb-3">
+        <%= f.label :company, "Company", class: "form-label" %>
+        <%= f.text_field :company, class: "form-control", placeholder: "e.g. Stripe", required: true %>
+      </div>
+
+      <div class="mb-3">
+        <%= f.label :job_description, class: "form-label" do %>
+          Job Description <span class="text-muted fw-normal">(optional)</span>
+        <% end %>
+        <%= f.text_area :job_description, rows: 16, class: "form-control",
+                        maxlength: 10_000,
+                        placeholder: "Paste the job posting for more tailored questions" %>
+      </div>
+
+      <%= f.submit "Research and Build My Prep Guide", class: "btn btn-primary btn-lg w-100" %>
+    <% end %>
+  </div>
+</div>

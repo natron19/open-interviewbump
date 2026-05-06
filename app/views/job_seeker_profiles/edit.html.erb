@@ -1,0 +1,29 @@
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <h1 class="mb-4">My Profile</h1>
+
+    <%= form_with model: @profile, url: job_seeker_profile_path, method: :patch,
+                  data: { controller: "character-counter", "character-counter-max-value": 10_000 } do |f| %>
+
+      <% if @profile.errors.any? %>
+        <div class="alert alert-danger">
+          <% @profile.errors.full_messages.each do |msg| %>
+            <div><%= msg %></div>
+          <% end %>
+        </div>
+      <% end %>
+
+      <div class="mb-3">
+        <%= f.label :background_summary, "Background Summary", class: "form-label" %>
+        <small class="text-muted ms-2">Brief description of your experience, skills, and career focus</small>
+        <%= f.text_area :background_summary, rows: 16, class: "form-control",
+                        maxlength: 10_000, placeholder: "e.g. 5 years of backend engineering in Python and Go. Strong in distributed systems and API design. Looking for senior IC roles at mid-size product companies. Paste your resume or a summary of your experience here.",
+                        data: { "character-counter-target": "input",
+                                action: "input->character-counter#update" } %>
+        <small class="form-text mt-1 d-block" data-character-counter-target="counter">2000 characters remaining</small>
+      </div>
+
+      <%= f.submit "Save Background Summary", class: "btn btn-primary" %>
+    <% end %>
+  </div>
+</div>

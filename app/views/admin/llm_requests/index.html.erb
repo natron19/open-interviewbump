@@ -1,0 +1,69 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1>LLM Requests</h1>
+  <%= link_to "← Dashboard", admin_dashboard_path, class: "btn btn-sm btn-outline-secondary" %>
+</div>
+
+<div class="mb-3 d-flex gap-2 flex-wrap">
+  <%= link_to "All", admin_llm_requests_path,
+      class: "btn btn-sm #{@status_filter.blank? ? 'btn-secondary' : 'btn-outline-secondary'}" %>
+  <% %w[success error timeout gatekeeper_blocked budget_exceeded pending].each do |status| %>
+    <%= link_to status.humanize, admin_llm_requests_path(status: status),
+        class: "btn btn-sm #{@status_filter == status ? 'btn-secondary' : 'btn-outline-secondary'}" %>
+  <% end %>
+</div>
+
+<div class="table-responsive">
+  <table class="table table-hover align-middle">
+    <thead>
+      <tr>
+        <th>Time</th>
+        <th>User</th>
+        <th>Template</th>
+        <th>Status</th>
+        <th class="text-end">Duration</th>
+        <th class="text-end">Tokens In</th>
+        <th class="text-end">Tokens Out</th>
+        <th class="text-end">Cost (¢)</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @requests.each do |req| %>
+        <tr data-bs-toggle="collapse" data-bs-target="#detail-<%= req.id %>"
+            style="cursor:pointer">
+          <td class="text-muted small"><%= req.created_at.strftime("%b %d %H:%M") %></td>
+          <td class="small"><%= req.user&.email %></td>
+          <td class="small"><%= req.template_name %></td>
+          <td><%= render "admin/llm_requests/status_badge", status: req.status %></td>
+          <td class="text-end small"><%= req.duration_ms ? "#{req.duration_ms}ms" : "—" %></td>
+          <td class="text-end small"><%= req.prompt_token_count || "—" %></td>
+          <td class="text-end small"><%= req.response_token_count || "—" %></td>
+          <td class="text-end small">
+            <%= req.cost_estimate_cents ? "%.4f" % req.cost_estimate_cents : "—" %>
+          </td>
+          <td class="text-muted small">▾</td>
+        </tr>
+        <tr class="collapse" id="detail-<%= req.id %>">
+          <td colspan="9" class="bg-body-secondary">
+            <div class="p-2">
+              <% if req.error_message.present? %>
+                <div class="text-danger small mb-1"><strong>Error:</strong> <%= req.error_message %></div>
+              <% end %>
+              <div class="text-muted small">
+                <strong>Template:</strong> <%= req.ai_template&.name || req.template_name %>
+                &nbsp;·&nbsp;
+                <strong>Model:</strong> <%= req.ai_template&.model || "—" %>
+                &nbsp;·&nbsp;
+                <strong>Request ID:</strong> <code><%= req.id %></code>
+              </div>
+            </div>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<% if @requests.empty? %>
+  <p class="text-muted text-center py-4">No requests found.</p>
+<% end %>

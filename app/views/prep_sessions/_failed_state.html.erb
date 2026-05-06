@@ -1,0 +1,11 @@
+<%# Terminal status signal for polling controller %>
+<div data-polling-target="terminalStatus" style="display:none"></div>
+
+<div class="alert alert-danger" role="alert">
+  <h5 class="alert-heading">Research failed</h5>
+  <p class="mb-3"><%= prep_session.error_message.presence || "An unexpected error occurred." %></p>
+  <%= link_to "Try again",
+        new_prep_session_path(job_title: prep_session.job_title, company: prep_session.company),
+        class: "btn btn-danger btn-sm",
+        data: { turbo_frame: "_top" } %>
+</div>

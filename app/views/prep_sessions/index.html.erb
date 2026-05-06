@@ -1,0 +1,44 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="mb-0">My Prep Sessions</h1>
+  <%= link_to "New Prep Session", new_prep_session_path, class: "btn btn-primary" %>
+</div>
+
+<% if @prep_sessions.empty? %>
+  <div class="card text-center py-5">
+    <div class="card-body">
+      <h5 class="card-title">No prep sessions yet</h5>
+      <p class="card-text text-muted">Research how a company actually interviews for a specific role.</p>
+      <%= link_to "Start your first prep session", new_prep_session_path, class: "btn btn-primary" %>
+    </div>
+  </div>
+<% else %>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>Company</th>
+          <th>Job Title</th>
+          <th>Status</th>
+          <th>Created</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @prep_sessions.each do |session| %>
+          <tr>
+            <td><%= session.company %></td>
+            <td><%= session.job_title %></td>
+            <td><%= render "prep_sessions/status_badge", session: session %></td>
+            <td class="text-muted small"><%= session.created_at.strftime("%b %-d, %Y") %></td>
+            <td class="text-end">
+              <%= link_to "View", prep_session_path(session), class: "btn btn-sm btn-outline-secondary me-1" %>
+              <%= link_to "Delete", prep_session_path(session),
+                    data: { turbo_method: :delete, turbo_confirm: "Delete this prep session?" },
+                    class: "btn btn-sm btn-outline-danger" %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% end %>

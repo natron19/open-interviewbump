@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -e
+
+echo "== Installing dependencies =="
+bundle install
+
+echo "== Copying .env.example to .env =="
+if [ ! -f .env ]; then
+  cp .env.example .env
+  echo "   .env created. Add your GEMINI_API_KEY before starting the server."
+else
+  echo "   .env already exists, skipping."
+fi
+
+echo "== Creating and migrating database =="
+bundle exec rails db:create db:migrate
+
+echo "== Seeding demo data =="
+bundle exec rails db:seed
+
+echo ""
+echo "== Setup complete =="
+echo ""
+echo "  Start the server:  bin/rails server"
+echo "  Sign in at:        http://localhost:3000/sign_in"
+echo "  Demo credentials:  demo@example.com / password123"
+echo "  Admin panel:       http://localhost:3000/admin"
+echo ""
+echo "  Don't forget: set GEMINI_API_KEY in your .env"
+echo ""

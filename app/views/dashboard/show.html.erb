@@ -1,0 +1,41 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="mb-0">Welcome back, <%= current_user.first_name %>.</h1>
+  <%= link_to "New Prep Session", new_prep_session_path, class: "btn btn-primary" %>
+</div>
+
+<% unless @has_profile %>
+  <div class="alert alert-info alert-dismissible fade show" role="alert">
+    <strong>Complete your profile</strong> — add a background summary so prep guides can include tailored STAR outlines.
+    <%= link_to "Add background summary →", edit_job_seeker_profile_path, class: "alert-link" %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+<% end %>
+
+<% if @recent_sessions.any? %>
+  <h5 class="text-muted mb-3">Recent Sessions</h5>
+  <div class="list-group">
+    <% @recent_sessions.each do |session| %>
+      <%= link_to prep_session_path(session), class: "list-group-item list-group-item-action d-flex justify-content-between align-items-center" do %>
+        <div>
+          <div class="fw-semibold"><%= session.company %></div>
+          <small class="text-muted"><%= session.job_title %></small>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+          <small class="text-muted"><%= session.created_at.strftime("%b %-d") %></small>
+          <%= render "prep_sessions/status_badge", session: session %>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+  <div class="mt-2">
+    <%= link_to "View all sessions →", prep_sessions_path, class: "small text-muted" %>
+  </div>
+<% else %>
+  <div class="card text-center py-5">
+    <div class="card-body">
+      <h5 class="card-title">No prep sessions yet</h5>
+      <p class="card-text text-muted">Research how a company actually interviews for a specific role.</p>
+      <%= link_to "Start your first prep session", new_prep_session_path, class: "btn btn-primary" %>
+    </div>
+  </div>
+<% end %>

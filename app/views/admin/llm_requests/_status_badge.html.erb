@@ -1,0 +1,10 @@
+<% color = case status
+           when "success"           then "bg-success"
+           when "error"             then "bg-danger"
+           when "timeout"           then "bg-warning text-dark"
+           when "gatekeeper_blocked" then "bg-secondary"
+           when "budget_exceeded"   then "bg-secondary"
+           when "pending"           then "bg-info text-dark"
+           else "bg-secondary"
+           end %>
+<span class="badge <%= color %>"><%= status.humanize %></span>

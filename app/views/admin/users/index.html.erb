@@ -1,0 +1,43 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1>Users <span class="badge bg-secondary fs-6"><%= @users.size %></span></h1>
+  <%= link_to "← Dashboard", admin_dashboard_path, class: "btn btn-sm btn-outline-secondary" %>
+</div>
+
+<div class="table-responsive">
+  <table class="table table-hover align-middle">
+    <thead>
+      <tr>
+        <th>Email</th>
+        <th>Name</th>
+        <th>Joined</th>
+        <th class="text-center">AI Calls Today</th>
+        <th class="text-center">AI Calls (Lifetime)</th>
+        <th>Last Seen</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @users.each do |user| %>
+        <tr>
+          <td><%= user.email %></td>
+          <td><%= user.name %></td>
+          <td class="text-muted small"><%= user.created_at.strftime("%b %d, %Y") %></td>
+          <td class="text-center"><%= @today_counts[user.id] || 0 %></td>
+          <td class="text-center"><%= @lifetime_counts[user.id] || 0 %></td>
+          <td class="text-muted small">
+            <% if (seen = @last_seen[user.id]) %>
+              <%= seen.strftime("%b %d, %Y %H:%M") %>
+            <% else %>
+              Never
+            <% end %>
+          </td>
+          <td>
+            <% if user.admin? %>
+              <span class="badge bg-primary">Admin</span>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

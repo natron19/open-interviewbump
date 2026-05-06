@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+  <body style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
+    <h2>Reset your password</h2>
+
+    <p>Hi <%= @user.first_name %>,</p>
+
+    <p>
+      Someone requested a password reset for your
+      <strong><%= ENV.fetch("APP_NAME", "Open Demo Starter") %></strong> account.
+      If that was you, click the link below to choose a new password.
+    </p>
+
+    <p style="margin: 32px 0;">
+      <a href="<%= @url %>"
+         style="background:#1d4ed8;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">
+        Reset my password
+      </a>
+    </p>
+
+    <p style="color: #666; font-size: 14px;">
+      This link expires in 30 minutes. If you didn't request a password reset,
+      you can safely ignore this email — your password won't change.
+    </p>
+
+    <hr style="margin-top: 32px; border: none; border-top: 1px solid #eee;">
+    <p style="color: #999; font-size: 12px;">
+      If the button doesn't work, copy and paste this URL into your browser:<br>
+      <a href="<%= @url %>" style="color: #999;"><%= @url %></a>
+    </p>
+  </body>
+</html>

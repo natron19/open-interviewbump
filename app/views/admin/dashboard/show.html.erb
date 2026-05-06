@@ -1,0 +1,52 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1>Admin Dashboard</h1>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <div class="display-6 fw-bold"><%= @total_users %></div>
+        <div class="text-muted small">Total Users</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <div class="display-6 fw-bold"><%= @calls_today %></div>
+        <div class="text-muted small">AI Calls Today</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <div class="display-6 fw-bold"><%= @calls_this_week %></div>
+        <div class="text-muted small">AI Calls This Week</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <div class="display-6 fw-bold"><%= @total_templates %></div>
+        <div class="text-muted small">AI Templates</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card border-danger mb-4">
+  <div class="card-body">
+    <h5 class="card-title text-danger">Recent Errors <span class="badge bg-danger"><%= @recent_errors %></span></h5>
+    <p class="text-muted small mb-2">Failed AI requests in the last 24 hours.</p>
+    <%= link_to "View recent requests →", admin_llm_requests_path, class: "btn btn-sm btn-outline-danger" %>
+  </div>
+</div>
+
+<div class="d-flex gap-2">
+  <%= link_to "Users", admin_users_path, class: "btn btn-outline-secondary btn-sm" %>
+  <%= link_to "AI Templates", admin_ai_templates_path, class: "btn btn-outline-secondary btn-sm" %>
+  <%= link_to "LLM Requests", admin_llm_requests_path, class: "btn btn-outline-secondary btn-sm" %>
+</div>

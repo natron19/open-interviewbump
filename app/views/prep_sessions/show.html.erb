@@ -1,0 +1,20 @@
+<div class="row justify-content-center">
+  <div class="col-lg-9">
+
+    <% if @prep_session.status == "complete" && @prep_guide %>
+      <%= render "prep_guide", prep_guide: @prep_guide, prep_session: @prep_session %>
+
+    <% elsif @prep_session.status == "failed" %>
+      <%= render "failed_state", prep_session: @prep_session %>
+
+    <% else %>
+      <%= turbo_frame_tag "prep-guide-status",
+            src: status_prep_session_path(@prep_session),
+            data: { controller: "polling",
+                    "polling-status-value": @prep_session.status } do %>
+        <%= render "in_progress_state", prep_session: @prep_session %>
+      <% end %>
+    <% end %>
+
+  </div>
+</div>

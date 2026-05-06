@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html data-bs-theme="dark" lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title><%= ENV.fetch("APP_NAME", "Open Demo Starter") %></title>
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <%= javascript_importmap_tags %>
+  </head>
+
+  <body class="d-flex flex-column min-vh-100">
+    <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom">
+      <div class="container">
+        <a class="navbar-brand fw-bold" href="/"><%= ENV.fetch("APP_NAME", "Open Demo Starter") %></a>
+
+        <% if signed_in? %>
+          <div class="d-flex align-items-center gap-2 me-3">
+            <%= link_to "Sessions", prep_sessions_path, class: "btn btn-sm btn-outline-light" %>
+            <%= link_to "+ New", new_prep_session_path, class: "btn btn-sm btn-primary" %>
+          </div>
+        <% end %>
+
+        <div class="ms-auto d-flex align-items-center gap-3">
+          <% if signed_in? %>
+            <div class="dropdown">
+              <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <%= current_user.first_name %>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="<%= edit_job_seeker_profile_path %>">My Profile</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <% if current_user.admin? %>
+                  <li><a class="dropdown-item" href="/admin">Admin</a></li>
+                  <li><hr class="dropdown-divider"></li>
+                <% end %>
+                <li>
+                  <%= button_to "Sign out", sign_out_path, method: :delete, class: "dropdown-item" %>
+                </li>
+              </ul>
+            </div>
+          <% else %>
+            <%= link_to "Sign in", sign_in_path, class: "btn btn-sm btn-outline-light" %>
+            <%= link_to "Sign up", sign_up_path, class: "btn btn-sm btn-primary" %>
+          <% end %>
+        </div>
+      </div>
+    </nav>
+
+    <div id="flash" class="container mt-3">
+      <% flash.each do |type, message| %>
+        <div class="alert alert-<%= flash_bootstrap_class(type) %> alert-dismissible fade show" role="alert">
+          <%= message %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      <% end %>
+    </div>
+
+    <main class="container py-4">
+      <%= yield %>
+    </main>
+
+    <footer class="border-top mt-auto py-3 text-center text-muted small">
+      <div class="container">
+        <span><%= ENV.fetch("APP_TAGLINE", "") %></span>
+        &nbsp;·&nbsp;
+        <a href="/LICENSE" class="text-muted">MIT License</a>
+        &nbsp;·&nbsp;
+        Built with <a href="https://github.com/your-handle/open-base" class="text-muted">Open Demo Starter</a>
+        <br>
+        <span class="text-warning-emphasis">
+          AI-generated content can be incorrect. Verify before acting.
+        </span>
+      </div>
+    </footer>
+  </body>
+</html>

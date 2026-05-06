@@ -1,0 +1,106 @@
+<%
+  questions     = JSON.parse(prep_guide.likely_questions)
+  star_outlines = JSON.parse(prep_guide.star_outlines)
+  signals       = JSON.parse(prep_guide.company_signals)
+  questions_ask = JSON.parse(prep_guide.questions_to_ask)
+  sources       = JSON.parse(prep_guide.sources)
+%>
+
+<%# Terminal status signal for polling controller %>
+<div data-polling-target="terminalStatus" style="display:none"></div>
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <h1 class="mb-0">Prep Guide: <%= prep_session.job_title %> at <%= prep_session.company %></h1>
+  <%= link_to "↓ Export Markdown", export_prep_session_path(prep_session), class: "btn btn-sm btn-outline-secondary" %>
+</div>
+
+<div class="alert alert-info" role="alert">
+  <strong>Heads up:</strong> This prep guide is based on publicly available sources. Verify the listed sources yourself before treating any information as current or authoritative. Interview processes change frequently.
+</div>
+
+<%# 5 likely questions with STAR outlines %>
+<h4 class="mt-4 mb-3">Likely Interview Questions</h4>
+<div class="accordion prep-guide-accordion mb-4" id="questions-accordion">
+  <% questions.each_with_index do |question, i| %>
+    <% outline = star_outlines[i] || {} %>
+    <div class="accordion-item">
+      <h2 class="accordion-header">
+        <button class="accordion-button <%= i == 0 ? "" : "collapsed" %>" type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#question-<%= i + 1 %>"
+                aria-expanded="<%= i == 0 ? "true" : "false" %>">
+          <%= question %>
+        </button>
+      </h2>
+      <div id="question-<%= i + 1 %>" class="accordion-collapse collapse <%= i == 0 ? "show" : "" %>"
+           data-bs-parent="#questions-accordion">
+        <div class="accordion-body">
+          <% if outline["situation"].present? %>
+            <p><strong>Situation:</strong> <%= outline["situation"] %></p>
+            <p><strong>Task:</strong> <%= outline["task"] %></p>
+            <p><strong>Action:</strong> <%= outline["action"] %></p>
+            <p class="mb-0"><strong>Result:</strong> <%= outline["result"] %></p>
+          <% else %>
+            <p class="text-muted fst-italic mb-0">No outline available for this question.</p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<%# Company signals %>
+<h4 class="mt-4 mb-2">Company-Specific Signals</h4>
+<p class="text-muted small mb-2">Reference these to demonstrate genuine research.</p>
+<ul class="mb-4">
+  <% signals.each do |signal| %>
+    <li class="mb-1"><%= signal %></li>
+  <% end %>
+</ul>
+
+<%# Smart questions to ask %>
+<h4 class="mt-4 mb-2">Smart Questions to Ask the Interviewer</h4>
+<ol class="mb-4">
+  <% questions_ask.each do |q| %>
+    <li class="mb-1"><%= q %></li>
+  <% end %>
+</ol>
+
+<%# Watch-out callout %>
+<div class="watch-out-callout">
+  <strong>Watch out:</strong> <%= prep_guide.watch_out %>
+</div>
+
+<%# Sources collapse %>
+<div class="mt-4">
+  <button class="btn btn-outline-secondary btn-sm mb-2" type="button"
+          data-bs-toggle="collapse" data-bs-target="#sources-collapse"
+          aria-expanded="false">
+    Sources the agent consulted
+  </button>
+  <div id="sources-collapse" class="collapse">
+    <% if sources.any? %>
+      <ul class="mb-0 mt-2">
+        <% sources.each do |url| %>
+          <li><a href="<%= url %>" target="_blank" rel="noopener noreferrer" style="color: var(--accent);"><%= url.truncate(80) %></a></li>
+        <% end %>
+      </ul>
+    <% else %>
+      <p class="text-muted small mt-2">No sources recorded for this session.</p>
+    <% end %>
+  </div>
+</div>
+
+<%# Raw response collapse %>
+<div class="mt-3 mb-4">
+  <button class="btn btn-outline-secondary btn-sm mb-2" type="button"
+          data-bs-toggle="collapse" data-bs-target="#raw-response-collapse"
+          aria-expanded="false">
+    Show raw response
+  </button>
+  <div id="raw-response-collapse" class="collapse">
+    <pre class="mt-2 p-3 border rounded small" style="white-space: pre-wrap; word-break: break-word; max-height: 400px; overflow-y: auto;"><%= prep_guide.gemini_raw %></pre>
+  </div>
+</div>
+
+<p><%= link_to "← Back to My Sessions", prep_sessions_path, class: "text-muted" %></p>
