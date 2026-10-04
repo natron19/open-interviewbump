@@ -1,0 +1,18 @@
+# Per-app guardrail configuration, read by AiGuardConfig.
+# See docs/ai-guardrails.md (Layer 1b: AiOutputGuard) and docs/ai-evals.md.
+
+# Interview prep is a career task; personal distress is out of scope here.
+crisis_terms: []
+
+# Output structure rules per AiTemplate name.
+#   format:        text | json
+#   required_keys: top-level keys the JSON object must contain
+templates:
+  health_ping:
+    format: text
+  # PrepGuideJob JSON.parses the agent's final text into a PrepGuide, and
+  # prep_sessions/_prep_guide JSON.parses and iterates these four arrays, so a
+  # missing one breaks the page. watch_out is printed as-is and may be absent.
+  interviewbump_prep_guide_v1:
+    format: json
+    required_keys: [likely_questions, star_outlines, questions_to_ask, company_signals]

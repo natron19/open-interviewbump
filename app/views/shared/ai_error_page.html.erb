@@ -1,0 +1,9 @@
+<%# Full-page AI error. Use from a Turbo form submit with status :unprocessable_entity — a bare
+    partial with 200 is discarded by Turbo, and one without the layout forces a full reload. %>
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <%= render "shared/ai_error", error_type: error_type %>
+    </div>
+  </div>
+</div>

@@ -116,5 +116,30 @@ RSpec.describe GeminiService do
         expect(LlmRequest.last.template_name).to eq(template.name)
       end
     end
+
+    context "when the output guard blocks the response" do
+      before { stub_gemini_success(text: "SSN 123-45-6789") }
+
+      it "raises OutputGuardError and marks the log output_blocked" do
+        expect {
+          GeminiService.generate(template: template.name, user: user)
+        }.to raise_error(GeminiService::OutputGuardError, /SSN/)
+
+        expect(LlmRequest.last.status).to eq("output_blocked")
+        expect(LlmRequest.last.prompt_token_count).to eq(100)
+      end
+    end
+
+    context "when called as a trusted internal caller" do
+      before { stub_gemini_success }
+
+      it "skips the input gatekeeper but still logs the call" do
+        expect(AiGatekeeper).not_to receive(:check!)
+
+        expect {
+          GeminiService.generate(template: template.name, user: user, trusted: true)
+        }.to change(LlmRequest, :count).by(1)
+      end
+    end
   end
 end

@@ -11,7 +11,8 @@ Always consult the relevant guide before implementing — they contain proven pa
 | [`docs/turbo-stimulus-patterns.md`](docs/turbo-stimulus-patterns.md) | Any Turbo Stream, Stimulus controller, Bootstrap interaction, or Editor.js work |
 | [`docs/security.md`](docs/security.md) | CSP, headers, rate limiting, secrets, auth security patterns |
 | [`docs/ai-templates.md`](docs/ai-templates.md) | Building AI features: creating templates, calling GeminiService, error handling, testing |
-| [`docs/ai-guardrails.md`](docs/ai-guardrails.md) | Safety layer: AiGatekeeper, AiBudgetChecker, LlmRequest logging, deliberate omissions |
+| [`docs/ai-guardrails.md`](docs/ai-guardrails.md) | Safety layer: AiGatekeeper, AiOutputGuard, AiBudgetChecker, LlmRequest logging, deliberate omissions |
+| [`docs/ai-evals.md`](docs/ai-evals.md) | Eval harness: GRADE / GRAFTS / ASSURED, case files, deterministic checks, LLM judge, `bin/rails evals:*` |
 | [`docs/testing.md`](docs/testing.md) | RSpec factories, model specs, service specs, request specs, Gemini stubs |
 
 ---
@@ -160,7 +161,9 @@ app/
     current.rb                    # CurrentAttributes, holds Current.user
   services/
     gemini_service.rb             # 9-step flow: gate → budget → log → call → complete
-    ai_gatekeeper.rb              # length, injection patterns, profanity
+    ai_gatekeeper.rb              # length, crisis terms, injection patterns, profanity
+    ai_output_guard.rb            # empty, prompt leak, profanity, invented PII, JSON shape
+    ai_guard_config.rb            # reads config/ai_guards.yml
     ai_budget_checker.rb          # daily cap per user from env var
   views/
     layouts/application.html.erb  # navbar, flash, footer with AI disclaimer
@@ -208,14 +211,16 @@ result = GeminiService.generate(
   variables: { topic: params[:topic], audience: params[:audience] }
 )
 rescue GeminiService::BudgetExceededError
-  render partial: "shared/ai_error", locals: { error_type: :budget_exceeded }
+  render "shared/ai_error_page", locals: { error_type: :budget_exceeded }, status: :unprocessable_entity
 rescue GeminiService::GatekeeperError
-  render partial: "shared/ai_error", locals: { error_type: :gatekeeper_blocked }
+  render "shared/ai_error_page", locals: { error_type: :gatekeeper_blocked }, status: :unprocessable_entity
 rescue GeminiService::TimeoutError
-  render partial: "shared/ai_error", locals: { error_type: :timeout }
+  render "shared/ai_error_page", locals: { error_type: :timeout }, status: :unprocessable_entity
 rescue GeminiService::GeminiError
-  render partial: "shared/ai_error", locals: { error_type: :error }
+  render "shared/ai_error_page", locals: { error_type: :error }, status: :unprocessable_entity
 ```
+
+**Turbo forms need a 4xx and the layout.** Turbo discards a `200` response to a form submit that does not redirect, and a bare partial (no layout) makes Turbo reload the page, so in both cases the user never sees the error. Render `shared/ai_error_page` (the partial inside the app layout) with `status: :unprocessable_entity`, as above. Inside a Turbo Stream response, `turbo_stream.update(..., partial: "shared/ai_error", ...)` is fine.
 
 **Never call the Gemini API directly.** Always go through `GeminiService.generate`. This ensures every call is gated, budgeted, logged, and time-bounded.
 
@@ -240,6 +245,7 @@ Every call writes an `LlmRequest` row. Valid statuses:
 - `pending` → `error` — unexpected Gemini error
 - `gatekeeper_blocked` — never reached Gemini (AiGatekeeper failed)
 - `budget_exceeded` — never reached Gemini (AiBudgetChecker failed)
+- `pending` → `output_blocked` — Gemini answered but AiOutputGuard rejected the response
 
 ---
 
@@ -441,5 +447,6 @@ When building a new demo app on top of this boilerplate, the only changes needed
 6. Add `AiTemplate` seeds
 7. Call `GeminiService.generate(template: "...", variables: {...})` from controllers
 8. Write model and request specs for the new feature
+9. Add output rules to `config/ai_guards.yml` and an `evals/cases/<template>.yml` (see `docs/ai-evals.md`)
 
 Do not modify the auth system, admin panel, services, or layout for individual demo apps.

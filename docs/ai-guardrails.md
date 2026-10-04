@@ -4,6 +4,8 @@ This guide defines the AI safety and abuse-prevention architecture for the Open 
 
 For building AI features (creating templates, calling GeminiService, error handling, testing), see [`ai-templates.md`](ai-templates.md).
 
+For measuring these guardrails (catch rate, false-positive rate) and the rest of the eval harness, see [`ai-evals.md`](ai-evals.md).
+
 The two frameworks referenced throughout:
 - **PROTECTS** — prompt-level guardrails that run before or during the AI call
 - **WATCHDOG** — backend measures for logging, rate limiting, and anomaly detection
@@ -18,12 +20,19 @@ Do not re-implement these — they are built into the boilerplate services.
 |---|---|---|
 | Input length check (5000 char max) | PROTECTS: Injection | `AiGatekeeper` |
 | Prompt injection pattern detection | PROTECTS: Injection | `AiGatekeeper` |
-| Basic profanity filter | PROTECTS: Tone | `AiGatekeeper` |
+| Basic profanity filter (word-prefix match) | PROTECTS: Tone | `AiGatekeeper` |
+| System-prompt extraction and role-tag patterns | PROTECTS: Injection | `AiGatekeeper` |
+| Crisis-term detection, answered with 988 resources (opt-in per app) | PROTECTS: Safety | `AiGatekeeper` + `config/ai_guards.yml` |
+| Indirect injection scrub of fetched web content | PROTECTS: Injection | `AiGatekeeper.scan_untrusted` |
+| Output: empty, system-prompt leak, profanity | PROTECTS: Output | `AiOutputGuard` |
+| Output: PII the model invented (SSN, card, email, phone) | PROTECTS: Privacy | `AiOutputGuard` |
+| Output: JSON shape and required keys per template | PROTECTS: Output | `AiOutputGuard` + `config/ai_guards.yml` |
 | Hard output token cap | PROTECTS: Output Length | `AiTemplate#max_output_tokens` |
 | 15-second request timeout | CAREFUL: Latency | `GeminiService` |
 | Daily call budget per user | WATCHDOG: Cap | `AiBudgetChecker` |
 | Full request log (every call) | WATCHDOG: Audit | `LlmRequest` |
-| Status tracking (success/error/timeout/blocked) | WATCHDOG: Anomaly | `LlmRequest#status` |
+| Status tracking (success/error/timeout/gatekeeper_blocked/output_blocked) | WATCHDOG: Anomaly | `LlmRequest#status` |
+| Guardrail and quality evals | GRADE / GRAFTS | `bin/rails evals:guardrails`, `bin/rails evals:run` |
 | Cost estimation per call | WATCHDOG: Cap | `LlmRequest#cost_estimate_cents` |
 | Admin visibility (last 100 calls) | WATCHDOG: Audit | `/admin/llm_requests` |
 | Health check endpoint | Operational | `/up/llm` |
@@ -60,6 +69,10 @@ INJECTION_PATTERNS = [
 ```
 
 All checks raise `GeminiService::GatekeeperError` on failure, which writes a `gatekeeper_blocked` `LlmRequest` row and bubbles up to the controller.
+
+**Crisis terms.** Apps where users may describe personal distress (life direction, support groups, spiritual questions) list phrases under `crisis_terms` in `config/ai_guards.yml`. A match raises `GeminiService::CrisisError` (a `GatekeeperError` subclass) carrying `AiGatekeeper::CRISIS_MESSAGE`, and the controller renders `error_type: :crisis`. No AI call is made.
+
+**Untrusted content.** Agent apps pass fetched pages and search results through `AiGatekeeper.scan_untrusted(text)` before handing them back to the model. Injection phrases are replaced with `[removed: possible prompt injection]`.
 
 ### Testing the Gatekeeper
 
@@ -99,6 +112,31 @@ end
 
 ---
 
+## Layer 1b: AiOutputGuard
+
+Runs **after every successful Gemini call**, inside `GeminiService`. Zero cost, regex and JSON only.
+
+| Check | Blocks |
+|---|---|
+| Empty | Blank responses |
+| Prompt leak | Output containing the first 80 characters of the template's `system_prompt` |
+| Profanity | `AiGatekeeper::BLOCKED_TERMS` in the output |
+| Invented PII | SSN, Luhn-valid card number, email, or phone number that was **not** in the input. Placeholder domains such as `example.com` are allowed. |
+| Structure | For templates listed in `config/ai_guards.yml` with `format: json`: the response parses and has every `required_keys` entry |
+
+On failure it raises `GeminiService::OutputGuardError`. The `LlmRequest` row keeps its token counts and cost, but its status becomes `output_blocked`. Controllers can render `error_type: :output_blocked`. Generic `GeminiError` handling also catches it.
+
+```yaml
+# config/ai_guards.yml
+crisis_terms: []
+templates:
+  my_feature_v1:
+    format: json
+    required_keys: [title, modules]
+```
+
+---
+
 ## Layer 2: AiBudgetChecker
 
 Runs **before every Gemini call**, after the gatekeeper.
@@ -124,14 +162,17 @@ Every AI call follows this flow. Nothing skips any step.
 ```
 1. Look up AiTemplate by name (raise if missing)
 2. Interpolate {{variables}} into user_prompt_template
-3. AiGatekeeper.check!(rendered_prompt)        ← Layer 1
+3. AiGatekeeper.check!(rendered_prompt)        ← Layer 1 (skipped only when trusted: true)
 4. AiBudgetChecker.check!(user)                ← Layer 2
 5. Create LlmRequest (status: pending)
 6. Call Gemini API with timeout (15s default)
 7a. On success: update LlmRequest (success, tokens, duration, cost)
-7b. On timeout: update LlmRequest (timeout, error_message), raise TimeoutError
-7c. On error: update LlmRequest (error, error_message), raise GeminiError
+7b. AiOutputGuard.check!(response)             ← Layer 1b; on failure status → output_blocked
+7c. On timeout: update LlmRequest (timeout, error_message), raise TimeoutError
+7d. On error: update LlmRequest (error, error_message), raise GeminiError
 8. Return response text string
+
+`trusted: true` is reserved for internal prompts that contain no user input. Today that is only the eval harness's LLM judge. Never pass it from a controller.
 ```
 
 ### Error Hierarchy
@@ -139,8 +180,10 @@ Every AI call follows this flow. Nothing skips any step.
 ```ruby
 GeminiService::GeminiError         # base class — catch this to handle all AI errors
   ::GatekeeperError                # blocked before API call
+    ::CrisisError                  # crisis term matched; message holds crisis resources
   ::BudgetExceededError            # over daily limit
   ::TimeoutError                   # Gemini took too long
+  ::OutputGuardError               # response failed AiOutputGuard
 ```
 
 ### Controller Error Handling Pattern
@@ -149,14 +192,18 @@ GeminiService::GeminiError         # base class — catch this to handle all AI 
 result = GeminiService.generate(template: "my_template_v1", variables: { topic: params[:topic] })
 
 rescue GeminiService::BudgetExceededError
-  render partial: "shared/ai_error", locals: { error_type: :budget_exceeded }
+  render "shared/ai_error_page", locals: { error_type: :budget_exceeded }, status: :unprocessable_entity
+rescue GeminiService::CrisisError          # only needed in apps with crisis_terms
+  render "shared/ai_error_page", locals: { error_type: :crisis }, status: :unprocessable_entity
 rescue GeminiService::GatekeeperError
-  render partial: "shared/ai_error", locals: { error_type: :gatekeeper_blocked }
+  render "shared/ai_error_page", locals: { error_type: :gatekeeper_blocked }, status: :unprocessable_entity
 rescue GeminiService::TimeoutError
-  render partial: "shared/ai_error", locals: { error_type: :timeout }
+  render "shared/ai_error_page", locals: { error_type: :timeout }, status: :unprocessable_entity
 rescue GeminiService::GeminiError
-  render partial: "shared/ai_error", locals: { error_type: :error }
+  render "shared/ai_error_page", locals: { error_type: :error }, status: :unprocessable_entity
 ```
+
+**Turbo forms need a 4xx and the layout.** Turbo discards a `200` response to a form submit that does not redirect, and a bare partial (no layout) makes Turbo reload the page, so in both cases the user never sees the error. Render `shared/ai_error_page` (the partial inside the app layout) with `status: :unprocessable_entity`, as above. Inside a Turbo Stream response, `turbo_stream.update(..., partial: "shared/ai_error", ...)` is fine.
 
 ---
 
@@ -213,8 +260,10 @@ These are out of scope for local demo apps. Each omission was a considered decis
 
 | Omission | Reason | Production alternative |
 |---|---|---|
-| PII scrubbing | Demo apps have no real user data; README warns users | Presidio, custom regex pipeline |
-| Content moderation API | Gemini's safety filters are sufficient at this scale | OpenAI Moderation API, Azure Content Safety |
+| PII scrubbing of inputs | Demo apps have no real user data; README warns users. Outputs are checked for *invented* PII only. | Presidio, custom regex pipeline |
+| Content moderation API | Gemini's safety filters plus the LLM-judge safety rubric in evals are sufficient at this scale | OpenAI Moderation API, Azure Content Safety |
+| Semantic (ML) injection classifier | Regex patterns are measured by `evals:guardrails`; misses are added as patterns | Prompt Guard, Lakera, Rebuff |
+| Online scoring of live traffic | Admin reviews the LLM request log; real failures become eval cases | Langfuse, Braintrust, Arize Phoenix |
 | Streaming responses | Synchronous calls keep the app simple; no streaming UX needed | Turbo Streams + async job |
 | Automatic retries | Would stack costs on transient failures; user retries manually | Exponential backoff with budget check |
 | Multi-provider fallback | Gemini-only by design; one fewer dependency for demos | Provider abstraction layer |
@@ -265,3 +314,5 @@ end
 5. Add realistic test inputs to `db/seeds.rb`
 6. Test via admin panel: normal input, empty input, prompt injection attempt
 7. Verify the gatekeeper blocks injection and the budget checker fires correctly in tests
+8. Add output rules to `config/ai_guards.yml` (format, required keys)
+9. Add `evals/cases/<template>.yml` and run `bin/rails evals:guardrails` and `bin/rails evals:run[<template>]`

@@ -143,16 +143,18 @@ class RecipesController < ApplicationController
       }
     )
   rescue GeminiService::BudgetExceededError
-    render partial: "shared/ai_error", locals: { error_type: :budget_exceeded }
+    render "shared/ai_error_page", locals: { error_type: :budget_exceeded }, status: :unprocessable_entity
   rescue GeminiService::GatekeeperError
-    render partial: "shared/ai_error", locals: { error_type: :gatekeeper_blocked }
+    render "shared/ai_error_page", locals: { error_type: :gatekeeper_blocked }, status: :unprocessable_entity
   rescue GeminiService::TimeoutError
-    render partial: "shared/ai_error", locals: { error_type: :timeout }
+    render "shared/ai_error_page", locals: { error_type: :timeout }, status: :unprocessable_entity
   rescue GeminiService::GeminiError
-    render partial: "shared/ai_error", locals: { error_type: :error }
+    render "shared/ai_error_page", locals: { error_type: :error }, status: :unprocessable_entity
   end
 end
 ```
+
+**Turbo forms need a 4xx and the layout.** Turbo discards a `200` response to a form submit that does not redirect, and a bare partial (no layout) makes Turbo reload the page, so in both cases the user never sees the error. Render `shared/ai_error_page` (the partial inside the app layout) with `status: :unprocessable_entity`, as above. Inside a Turbo Stream response, `turbo_stream.update(..., partial: "shared/ai_error", ...)` is fine.
 
 `GeminiService.generate` returns the response text as a plain string on success.
 

@@ -6,7 +6,7 @@
 <div class="mb-3 d-flex gap-2 flex-wrap">
   <%= link_to "All", admin_llm_requests_path,
       class: "btn btn-sm #{@status_filter.blank? ? 'btn-secondary' : 'btn-outline-secondary'}" %>
-  <% %w[success error timeout gatekeeper_blocked budget_exceeded pending].each do |status| %>
+  <% %w[success error timeout gatekeeper_blocked output_blocked budget_exceeded pending].each do |status| %>
     <%= link_to status.humanize, admin_llm_requests_path(status: status),
         class: "btn btn-sm #{@status_filter == status ? 'btn-secondary' : 'btn-outline-secondary'}" %>
   <% end %>
