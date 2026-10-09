@@ -6,6 +6,8 @@ class LlmRequest < ApplicationRecord
 
   validates :status, inclusion: { in: STATUSES }
 
+  before_save { self.error_message = SecretRedactor.redact(error_message) if error_message_changed? }
+
   scope :today,      -> { where(created_at: Date.current.all_day) }
   scope :this_week,  -> { where(created_at: 1.week.ago..Time.current) }
   scope :successful, -> { where(status: "success") }

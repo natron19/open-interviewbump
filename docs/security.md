@@ -173,6 +173,12 @@ AI_CALLS_PER_USER_PER_DAY=50
 AI_GLOBAL_TIMEOUT_SECONDS=15
 ```
 
+### Keeping API keys out of logs and reports
+
+- **The Gemini key goes in the `x-goog-api-key` header, never the URL.** A key in a query string ends up in any error, proxy, or log that records the URL. `spec/services/gemini_key_transport_spec.rb` fails if it moves back.
+- **`SecretRedactor` scrubs anything the app stores or prints.** It masks the value of every ENV variable named `*API_KEY`, `*_TOKEN`, `*_SECRET`, or `*PASSWORD`, plus Google-shaped keys, `key=` query values, `x-goog-api-key` values, and bearer tokens. It runs on `LlmRequest#error_message` before save, on eval case errors, and on the eval report JSON in `tmp/evals/`.
+- Eval reports, `log/`, and `tmp/` are gitignored. Reports and the admin request log still live on your machine, which is why they are redacted rather than only ignored.
+
 ---
 
 ## Authentication Security Patterns

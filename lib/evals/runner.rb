@@ -46,7 +46,7 @@ module Evals
       begin
         outcome = adapter.call(variables: kase["variables"], user: @user)
       rescue GeminiService::GeminiError => e
-        result[:error] = "#{e.class.name.demodulize}: #{e.message}"
+        result[:error] = SecretRedactor.redact("#{e.class.name.demodulize}: #{e.message}")
       end
       result.merge!(system_metrics(file.template, started))
       return result if result[:error]

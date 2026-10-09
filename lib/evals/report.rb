@@ -95,10 +95,10 @@ module Evals
       dir = Rails.root.join("tmp/evals")
       FileUtils.mkdir_p(dir)
       path = dir.join("report-#{Time.current.strftime('%Y%m%d-%H%M%S')}.json")
-      File.write(path, JSON.pretty_generate(
+      File.write(path, SecretRedactor.redact(JSON.pretty_generate(
         metrics:, bars: bar_results, passed: passed?, assured: assured_rollup, segments: segment_rollup,
         guardrails: @guardrails.map(&:to_h), cases: @cases, calibration: @calibration
-      ))
+      )))
       path
     end
 
