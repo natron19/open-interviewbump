@@ -9,8 +9,15 @@ class HealthController < ApplicationController
                             message: "health_ping template not seeded" }, status: :ok
     end
 
+    # Every LlmRequest belongs to a user, so the ping runs as the seeded admin.
+    caller = User.where(admin: true).order(:created_at).first
+    if caller.nil?
+      return render json: { status: "unconfigured",
+                            message: "no admin user seeded" }, status: :ok
+    end
+
     start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-    result = GeminiService.generate(template: "health_ping", variables: {}, user: nil)
+    result = GeminiService.generate(template: "health_ping", variables: {}, user: caller, trusted: true)
     duration_ms = elapsed_ms(start)
 
     render json: { status: "ok", response: result, duration_ms: duration_ms }
