@@ -220,7 +220,7 @@ class GeminiService
 
       body = response.body
       total_prompt_tokens   += body.dig("usageMetadata", "promptTokenCount").to_i
-      total_response_tokens += body.dig("usageMetadata", "candidatesTokenCount").to_i
+      total_response_tokens += billed_output_tokens(body).to_i
 
       parts = body.dig("candidates", 0, "content", "parts") || []
 
@@ -293,7 +293,7 @@ class GeminiService
                 .join
 
     prompt_tokens   = body.dig("usageMetadata", "promptTokenCount")     || estimate_tokens(full_prompt)
-    response_tokens = body.dig("usageMetadata", "candidatesTokenCount") || estimate_tokens(text)
+    response_tokens = billed_output_tokens(body) || estimate_tokens(text)
 
     [text, prompt_tokens, response_tokens]
   end
@@ -302,10 +302,23 @@ class GeminiService
     (text.to_s.length / 4.0).ceil
   end
 
+  # Gemini Developer API paid-tier prices, in cents per 1M tokens (ai.google.dev/gemini-api/docs/pricing,
+  # checked 2026-10-10). Output includes thinking tokens. Prompts here stay under the 200k-token tier.
+  PRICES_CENTS_PER_MILLION = {
+    "gemini-2.5-flash" => { input: 30.0,  output: 250.0 },
+    "gemini-2.5-pro"   => { input: 125.0, output: 1000.0 }
+  }.freeze
+
   def estimate_cost(prompt_tokens, response_tokens, model)
-    input_rate  = 7.5
-    output_rate = 30.0
-    ((prompt_tokens * input_rate) + (response_tokens * output_rate)) / 1_000_000.0
+    rate = PRICES_CENTS_PER_MILLION.fetch(model.to_s, PRICES_CENTS_PER_MILLION["gemini-2.5-flash"])
+    ((prompt_tokens.to_i * rate[:input]) + (response_tokens.to_i * rate[:output])) / 1_000_000.0
+  end
+
+  # Gemini bills thinking tokens as output, but reports them apart from the visible answer.
+  def billed_output_tokens(body)
+    usage = body["usageMetadata"] || {}
+    return nil unless usage["candidatesTokenCount"] || usage["thoughtsTokenCount"]
+    usage["candidatesTokenCount"].to_i + usage["thoughtsTokenCount"].to_i
   end
 
   def elapsed_ms(start)

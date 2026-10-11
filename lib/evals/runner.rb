@@ -19,6 +19,15 @@ module Evals
       end
     end
 
+    # A case's criteria add to the file's rubric. One marked `replaces: true` stands in for the
+    # file's criterion of the same dimension, for a case where the general one can't apply
+    # (e.g. the right answer deliberately changes what the input asked for).
+    def self.rubric_for(file_rubric, case_rubric)
+      case_rubric = Array(case_rubric)
+      replaced    = case_rubric.select { |item| item["replaces"] }.map { |item| item["dimension"] }
+      Array(file_rubric).reject { |item| replaced.include?(item["dimension"]) } + case_rubric
+    end
+
     def initialize(only: nil, user: self.class.eval_user, judge: nil, io: $stdout)
       @only  = only
       @user  = user
@@ -55,7 +64,7 @@ module Evals
                                     trace: Array(outcome.trace), duration_ms: result[:duration_ms])
       result[:output_preview] = outcome.output.to_s.truncate(300)
       result[:checks]    = Array(kase["checks"]).map { |check| grade(check, context) }
-      result[:judgments] = (file.rubric + Array(kase["rubric"])).map { |item| judge(item, kase, outcome.output) }
+      result[:judgments] = self.class.rubric_for(file.rubric, kase["rubric"]).map { |item| judge(item, kase, outcome.output) }
       result
     end
 
