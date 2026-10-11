@@ -38,4 +38,10 @@ RSpec.describe GeminiService, ".generation_config" do
 
     expect(described_class.generation_config(template, json: false)).to include(maxOutputTokens: 3000, thinkingConfig: { thinkingBudget: -1 })
   end
+
+  it "uses a template's own thinking_budget from config/ai_guards.yml" do
+    allow(AiGuardConfig).to receive(:for_template).with("plain_text_v1").and_return({ thinking_budget: 0 }.with_indifferent_access)
+
+    expect(described_class.generation_config(template, json: false)).to include(maxOutputTokens: 3000, thinkingConfig: { thinkingBudget: 0 })
+  end
 end

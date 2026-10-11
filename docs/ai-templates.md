@@ -253,7 +253,7 @@ Review this Ruby code for security vulnerabilities: {{code}}
 
 ### Token budget
 
-`max_output_tokens` is a hard cap. Set it 20–30% above the longest reasonable response. A recipe shouldn't need more than 800 tokens; a code review rarely exceeds 1500. The limit covers the answer only: on gemini-2.5 models GeminiService adds a capped thinking budget (`AI_THINKING_BUDGET`, default 1024) on top, so thinking can't use up the room for the answer. Templates whose guard rules say `format: json` also get `responseMimeType: application/json`.
+`max_output_tokens` is a hard cap. Set it 20–30% above the longest reasonable response. A recipe shouldn't need more than 800 tokens; a code review rarely exceeds 1500. The limit covers the answer only: on gemini-2.5 models GeminiService adds a capped thinking budget (`AI_THINKING_BUDGET`, default 1024) on top, so thinking can't use up the room for the answer. A template can set its own `thinking_budget` in `config/ai_guards.yml` (0 turns thinking off), e.g. for long outputs where latency matters more than reasoning. Templates whose guard rules say `format: json` also get `responseMimeType: application/json`.
 
 ---
 

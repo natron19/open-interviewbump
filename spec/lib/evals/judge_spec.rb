@@ -29,4 +29,15 @@ RSpec.describe Evals::Judge do
     allow(GeminiService).to receive(:generate).and_raise(GeminiService::TimeoutError, "slow")
     expect(judge.score(criterion: "c", input: "i", output: "o").reason).to match(/failed/)
   end
+
+  it "tells the judge today's date so recent dates don't read as future ones" do
+    allow(GeminiService).to receive(:generate).and_return('{"score": 5, "reason": "ok"}')
+
+    allow(Date).to receive(:current).and_return(Date.new(2026, 10, 10))
+    judge.score(criterion: "Dates are plausible", input: "i", output: "o")
+
+    expect(GeminiService).to have_received(:generate).with(hash_including(
+      variables: hash_including(criterion: a_string_including("Dates are plausible", "Today's date is 2026-10-10"))
+    ))
+  end
 end

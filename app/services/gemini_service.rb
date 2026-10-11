@@ -73,6 +73,13 @@ class GeminiService
 
     begin
       response_text, prompt_tokens, response_tokens = call_gemini(ai_template, rendered_prompt)
+      # Gemini occasionally drops a brace or bracket even in JSON mode. One retry is cheaper
+      # than showing the user an error; both calls are counted in the log.
+      if unparseable_json?(ai_template, response_text)
+        response_text, retry_prompt_tokens, retry_response_tokens = call_gemini(ai_template, rendered_prompt)
+        prompt_tokens   += retry_prompt_tokens
+        response_tokens += retry_response_tokens
+      end
       duration_ms = elapsed_ms(start_time)
 
       log.update!(
@@ -303,13 +310,17 @@ class GeminiService
   def self.generation_config(ai_template, json: AiGuardConfig.for_template(ai_template.name)[:format] == "json")
     config = { maxOutputTokens: ai_template.max_output_tokens.to_i, temperature: ai_template.temperature.to_f }
     if ai_template.model.to_s.start_with?("gemini-2.5")
-      budget = THINKING_BUDGET
+      budget = AiGuardConfig.for_template(ai_template.name)[:thinking_budget]&.to_i || THINKING_BUDGET
       budget = [budget, 128].max if budget >= 0 && ai_template.model.to_s.include?("pro") # pro can't turn thinking off
       config[:thinkingConfig]  = { thinkingBudget: budget }
       config[:maxOutputTokens] += budget if budget.positive?
     end
     config[:responseMimeType] = "application/json" if json
     config
+  end
+
+  def unparseable_json?(ai_template, text)
+    AiGuardConfig.for_template(ai_template.name)[:format] == "json" && AiOutputGuard.extract_json(text).nil?
   end
 
   def estimate_tokens(text)

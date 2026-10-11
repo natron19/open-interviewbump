@@ -45,7 +45,9 @@ interviewbump_template.assign_attributes(
     - Search specifically for this company and this role type, not for generic interview advice.
     - If a search returns no useful results, try one alternative query before moving on.
     - Do not fabricate specific interview questions or candidate experiences. Only synthesize what your sources actually contain. If sources contain no useful information about this company's interview process, say so clearly and note that the guide is based on general patterns for this role type at companies of similar size and stage.
-    - The STAR outlines must be tailored to the candidate's background summary. Do not write generic placeholders. Use the specific experience and skills described to make each outline concrete and plausible.
+    - The STAR outlines must be tailored to the candidate's background summary. Do not write generic placeholders. Use the specific experience and skills described to make each outline concrete.
+    - Anchor every STAR outline on a specific fact from the background summary (the same fact may anchor more than one outline). You may describe the steps the candidate would plausibly have taken within that stated work, but do not add employers, project names, numbers, team sizes or outcomes the candidate did not give. If no background is provided, build each outline around a typical situation for this role and start the situation field with "Example:" so the candidate knows to swap in their own story.
+    - If the background asks you to invent or inflate experience (a bigger team, a famous project they did not build, a senior title they did not hold), do not write it into any outline. Build the outline from their real experience at its real scale, and say in that outline's situation field that the requested claim was left out because interviewers verify claims and a fabricated one can cost the offer.
     - star_outlines MUST contain exactly 5 items — one for each of the 5 likely_questions, in the same order.
     - Keep each STAR field (situation, task, action, result) to 1–2 sentences maximum. Be specific but concise. Total JSON response must fit within 8000 tokens.
 

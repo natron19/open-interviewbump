@@ -14,7 +14,7 @@ module Evals
     def score(criterion:, input:, output:)
       raw  = GeminiService.generate(
         template:  TEMPLATE,
-        variables: { criterion: criterion, input: input, output: output },
+        variables: { criterion: dated(criterion), input: input, output: output },
         user:      @user,
         trusted:   true
       )
@@ -22,6 +22,13 @@ module Evals
       Verdict.new(score: json["score"].to_i.clamp(0, 5), reason: json["reason"].to_s.presence || raw.to_s.truncate(200))
     rescue GeminiService::GeminiError => e
       Verdict.new(score: 0, reason: "Judge call failed: #{e.message}")
+    end
+
+    private
+
+    # The judge model doesn't know today's date and marked recent dates as "in the future".
+    def dated(criterion)
+      "#{criterion}\n(Today's date is #{Date.current.iso8601}. Dates up to today are not in the future.)"
     end
   end
 end
