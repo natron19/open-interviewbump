@@ -76,3 +76,39 @@ RSpec.describe AiOutputGuard do
     end
   end
 end
+
+RSpec.describe AiOutputGuard, ".repair_json_text" do
+  before do
+    allow(AiGuardConfig).to receive(:for_template).and_return({}.with_indifferent_access)
+    allow(AiGuardConfig).to receive(:for_template).with("json_v1").and_return({ format: "json" }.with_indifferent_access)
+  end
+
+  it "escapes raw line breaks inside JSON strings so JSON.parse accepts the text" do
+    raw = %({"steps": "1. Say hi.\n2. Ask a question.\tThen listen."})
+
+    repaired = described_class.repair_json_text(raw, "json_v1")
+
+    expect(JSON.parse(repaired)).to eq("steps" => "1. Say hi.\n2. Ask a question.\tThen listen.")
+  end
+
+  it "leaves line breaks between JSON tokens alone" do
+    raw = %({\n  "a": "x\ny",\n  "b": "say \\"hi\\"\n"\n})
+
+    expect(JSON.parse(described_class.repair_json_text(raw, "json_v1"))).to eq("a" => "x\ny", "b" => "say \"hi\"\n")
+  end
+
+  it "returns valid JSON unchanged" do
+    raw = %({\n  "a": "b"\n})
+    expect(described_class.repair_json_text(raw, "json_v1")).to equal(raw)
+  end
+
+  it "returns text unchanged for templates that are not JSON" do
+    raw = "Line one\nLine \"two\""
+    expect(described_class.repair_json_text(raw, "plain_v1")).to equal(raw)
+  end
+
+  it "returns broken JSON unchanged when escaping doesn't fix it" do
+    raw = %({"a": "cut off)
+    expect(described_class.repair_json_text(raw, "json_v1")).to equal(raw)
+  end
+end

@@ -33,6 +33,41 @@ class AiOutputGuard
     nil
   end
 
+  # Gemini sometimes writes raw line breaks or tabs inside JSON strings, which JSON.parse
+  # rejects. For templates whose guard rules say format: json, escape them, but only when
+  # that turns unparseable text into parseable text. Anything else comes back unchanged.
+  def self.repair_json_text(text, template_name)
+    return text unless AiGuardConfig.for_template(template_name)[:format] == "json"
+    return text if extract_json(text)
+
+    repaired = escape_control_chars_in_strings(text.to_s)
+    extract_json(repaired) ? repaired : text
+  end
+
+  def self.escape_control_chars_in_strings(text)
+    in_string = false
+    escaped   = false
+    text.each_char.map do |c|
+      if !in_string
+        in_string = true if c == '"'
+        c
+      elsif escaped
+        escaped = false
+        c
+      elsif c == "\\"
+        escaped = true
+        c
+      elsif c == '"'
+        in_string = false
+        c
+      elsif c.ord < 0x20
+        format("\\u%04x", c.ord)
+      else
+        c
+      end
+    end.join
+  end
+
   def initialize(output, template:, input: "")
     @output   = output.to_s
     @template = template

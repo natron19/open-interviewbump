@@ -13,6 +13,12 @@ class GeminiService
   AGENT_TIMEOUT_SECONDS = ENV.fetch("AI_AGENT_TIMEOUT_SECONDS",  "45").to_i
   BASE_URL              = "https://generativelanguage.googleapis.com/v1beta"
 
+  # gemini-2.5 models think before they answer, and thinking tokens count against maxOutputTokens.
+  # Uncapped, thinking used up whole budgets (the JSON came back cut off) and made calls slow.
+  # The budget caps thinking and is added on top of the template's limit, so max_output_tokens
+  # stays the room for the answer itself. -1 lets Gemini decide (dynamic thinking).
+  THINKING_BUDGET       = ENV.fetch("AI_THINKING_BUDGET", "1024").to_i
+
   # trusted: true skips the user-input gatekeeper. Only for internal callers whose
   # prompt is not user input (the eval harness LLM judge). Still logged and output-guarded.
   def self.generate(template:, variables: {}, user: Current.user, trusted: false)
@@ -208,10 +214,7 @@ class GeminiService
           req.body = {
             contents:         contents,
             tools:            [{ functionDeclarations: tool_declarations }],
-            generationConfig: {
-              maxOutputTokens: ai_template.max_output_tokens,
-              temperature:     ai_template.temperature.to_f
-            }
+            generationConfig: self.class.generation_config(ai_template, json: false)
           }
         end
       end
@@ -250,7 +253,7 @@ class GeminiService
           }]
         }
       else
-        text = parts.map { |p| p["text"].to_s }.join
+        text = AiOutputGuard.repair_json_text(parts.map { |p| p["text"].to_s }.join, ai_template.name)
         return { text: text, prompt_tokens: total_prompt_tokens, response_tokens: total_response_tokens }
       end
     end
@@ -275,10 +278,7 @@ class GeminiService
         req.headers["x-goog-api-key"] = ENV.fetch("GEMINI_API_KEY")
         req.body = {
           contents: [{ parts: [{ text: full_prompt }] }],
-          generationConfig: {
-            maxOutputTokens: ai_template.max_output_tokens,
-            temperature:     ai_template.temperature.to_f
-          }
+          generationConfig: self.class.generation_config(ai_template)
         }
       end
     end
@@ -291,11 +291,25 @@ class GeminiService
     text    = (body.dig("candidates", 0, "content", "parts") || [])
                 .map { |p| p["text"].to_s }
                 .join
+    text    = AiOutputGuard.repair_json_text(text, ai_template.name)
 
     prompt_tokens   = body.dig("usageMetadata", "promptTokenCount")     || estimate_tokens(full_prompt)
     response_tokens = billed_output_tokens(body) || estimate_tokens(text)
 
     [text, prompt_tokens, response_tokens]
+  end
+
+  # json: false for requests that declare tools, which Gemini won't combine with a JSON response type.
+  def self.generation_config(ai_template, json: AiGuardConfig.for_template(ai_template.name)[:format] == "json")
+    config = { maxOutputTokens: ai_template.max_output_tokens.to_i, temperature: ai_template.temperature.to_f }
+    if ai_template.model.to_s.start_with?("gemini-2.5")
+      budget = THINKING_BUDGET
+      budget = [budget, 128].max if budget >= 0 && ai_template.model.to_s.include?("pro") # pro can't turn thinking off
+      config[:thinkingConfig]  = { thinkingBudget: budget }
+      config[:maxOutputTokens] += budget if budget.positive?
+    end
+    config[:responseMimeType] = "application/json" if json
+    config
   end
 
   def estimate_tokens(text)

@@ -377,6 +377,7 @@ create(:llm_request, :timeout)  # use traits for status variants
 | `GEMINI_API_KEY` | (required) | Gemini API access |
 | `AI_CALLS_PER_USER_PER_DAY` | `50` | Daily budget cap |
 | `AI_GLOBAL_TIMEOUT_SECONDS` | `15` | Gemini request timeout |
+| `AI_THINKING_BUDGET` | `1024` | gemini-2.5 thinking tokens per call, added on top of `max_output_tokens` (-1 = Gemini decides) |
 
 Always read values with `ENV.fetch("VAR_NAME", "default")`. Never hardcode these values anywhere.
 

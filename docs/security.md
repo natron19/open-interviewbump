@@ -171,6 +171,7 @@ GEMINI_API_KEY=your_gemini_api_key_here   # Get free key at aistudio.google.com
 APP_NAME="Open Demo Starter"
 AI_CALLS_PER_USER_PER_DAY=50
 AI_GLOBAL_TIMEOUT_SECONDS=45
+AI_THINKING_BUDGET=1024
 ```
 
 ### Keeping API keys out of logs and reports
